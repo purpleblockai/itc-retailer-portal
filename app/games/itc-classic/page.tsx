@@ -93,6 +93,17 @@ export default function ITCClassicGamePage() {
   const [language, setLanguage] = useState("English")
   const router = useRouter()
 
+  // Add permission check function
+  const checkMicrophonePermission = async () => {
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      return permissionStatus.state === 'granted';
+    } catch (error) {
+      console.error('Error checking microphone permission:', error);
+      return false;
+    }
+  };
+
   // Cleanup function
   useEffect(() => {
     return () => {
@@ -116,10 +127,27 @@ export default function ITCClassicGamePage() {
     if (activeInput > 2 || isValidating) return;
 
     try {
+      // Check if permission is already granted
+      const hasPermission = await checkMicrophonePermission();
+      
+      if (!hasPermission) {
+        // On mobile, we need to request permission through getUserMedia
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        // After successful permission, proceed with recording
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true,
-        video: false 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
+
+      // Check if the stream is valid and has audio tracks
+      if (!stream || !stream.getAudioTracks().length) {
+        throw new Error('No audio track available');
+      }
 
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
