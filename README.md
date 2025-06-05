@@ -1,30 +1,123 @@
-# ITC-Spiel-DS
+# ITC Retailer Portal
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A modern web application for ITC retailers featuring speech-to-text game variations and interactive user experiences.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/purple-block/v0-itc-spiel-retailer)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/Soc0h82xWSz)
+## Features
 
-## Overview
+### 1. Game Variations
+- **ITC Classic**
+- **ITC Flake**
+- **ITC Navy Cut**
+Each variation features unique branding while maintaining consistent gameplay mechanics.
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+### 2. Speech Recognition & Validation
+- Enhanced speech-to-text validation system
+- Exact phrase matching requirement
+- Improved text cleaning and comparison logic
+- Manual recording stop functionality
+- 8-second automatic recording timer
+- Visual feedback for recording state
+
+### 3. UI/UX Improvements
+- **Consistent Design Language**
+  - Spiral background pattern across all games
+  - Standardized box sizes and styling
+  - Uniform button dimensions and colors
+  - Cohesive layout structure
+
+- **Game Won Page**
+  - Minimalist design with circular back button
+  - Animated trophy icon
+  - Congratulatory message
+  - Clean, modern aesthetic
+
+- **Verification Success Page**
+  - Purple checkmark icon
+  - Updated text styling
+  - Matching background pattern
+  - Clear success indicators
+
+## Technical Requirements
+
+- Node.js
+- pnpm (Package Manager)
+- OpenAI API Key for speech validation
+
+## Environment Variables
+
+```env
+OPENAI_API_KEY=your_api_key_here
+```
+
+## Setup Instructions
+
+1. Clone the repository:
+```bash
+git clone https://github.com/purpleblockai/itc-retailer-portal.git
+cd itc-retailer-portal
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Set up environment variables:
+- Create a `.env` file in the root directory
+- Add your OpenAI API key as shown above
+
+4. Run the development server:
+```bash
+pnpm dev
+```
+
+5. Build for production:
+```bash
+pnpm build
+```
 
 ## Deployment
 
-Your project is live at:
+This project is configured for deployment on Vercel. To deploy:
 
-**[https://vercel.com/purple-block/v0-itc-spiel-retailer](https://vercel.com/purple-block/v0-itc-spiel-retailer)**
+1. Import your repository on Vercel
+2. Add the required environment variables
+3. Deploy the project
 
-## Build your app
+## Features in Detail
 
-Continue building your app on:
+### Speech Validation
+- Improved accuracy with exact phrase matching
+- Enhanced text cleaning algorithms
+- Real-time feedback during recording
+- Manual stop recording capability
 
-**[https://v0.dev/chat/projects/Soc0h82xWSz](https://v0.dev/chat/projects/Soc0h82xWSz)**
+### User Interface
+- Consistent styling across all game variations
+- Responsive design for all screen sizes
+- Interactive feedback elements
+- Smooth transitions and animations
 
-## How It Works
+### Game Flow
+1. User Registration/Login
+2. Game Selection (Classic/Flake/Navy Cut)
+3. Speech Recording Interface
+4. Validation Process
+5. Success/Retry Flow
+6. Prize Collection Information
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+## Technical Stack
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Shadcn UI Components
+- OpenAI API for Speech Validation
+
+## Contributing
+
+Please read our contributing guidelines before submitting pull requests.
+
+## License
+
+This project is private and proprietary. All rights reserved. 
