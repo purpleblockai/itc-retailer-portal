@@ -87,7 +87,6 @@ export default function ITCNavyCutGamePage() {
   const [isValidating, setIsValidating] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
-  const [language, setLanguage] = useState("English")
   const router = useRouter()
 
   // Add permission check function
@@ -243,7 +242,7 @@ export default function ITCNavyCutGamePage() {
       const formData = new FormData();
       formData.append('audio', audioBlob);
       formData.append('text', PHRASE);
-      formData.append('language', language);
+      formData.append('language', 'en-US');
 
       const response = await fetch('/api/speech-validation', {
         method: 'POST',
@@ -283,7 +282,7 @@ export default function ITCNavyCutGamePage() {
 
   const handlePlayPhrase = () => {
     const utterance = new SpeechSynthesisUtterance(PHRASE);
-    utterance.lang = language === 'English' ? 'en-US' : 'hi-IN';
+    utterance.lang = 'en-US';
     window.speechSynthesis.speak(utterance);
   };
 
@@ -348,17 +347,13 @@ export default function ITCNavyCutGamePage() {
 
       {/* Tagline card */}
       <div className="bg-[#18181b] rounded-2xl shadow-lg p-6 mb-6 mx-auto w-full max-w-md relative z-10">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex gap-2">
-            <button className={`px-3 py-1 rounded-full text-sm font-bold ${language === "English" ? "bg-[#B275F7] text-black" : "bg-gray-700 text-white"}`} onClick={() => setLanguage("English")}>English</button>
-            <button className={`px-3 py-1 rounded-full text-sm font-bold ${language === "Hindi" ? "bg-[#B275F7] text-black" : "bg-gray-700 text-white"}`} onClick={() => setLanguage("Hindi")}>Hindi</button>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 text-center">
+            <span className="text-[#B275F7] text-2xl font-bold">"{PHRASE}"</span>
           </div>
-          <button onClick={handlePlayPhrase} className="text-[#B275F7] p-2 rounded-full hover:bg-gray-800 transition-colors">
+          <button onClick={handlePlayPhrase} className="text-[#B275F7] p-2 rounded-full hover:bg-gray-800 transition-colors flex-shrink-0">
             <Volume2 className="w-6 h-6" />
           </button>
-        </div>
-        <div className="text-center">
-          <span className="text-[#B275F7] text-2xl font-bold">"{PHRASE}"</span>
         </div>
       </div>
 

@@ -6,14 +6,15 @@ import { ArrowLeft } from "lucide-react"
 
 export default function OTPVerificationPage() {
   const [otp, setOtp] = useState(["", "", "", ""])
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([])
   const [phoneNumber, setPhoneNumber] = useState("")
   const [error, setError] = useState("")
 
   // Focus on first input when component mounts
   useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus()
+    const firstInput = inputRefs.current[0];
+    if (firstInput) {
+      firstInput.focus();
     }
 
     // Get the phone number from sessionStorage
@@ -40,8 +41,11 @@ export default function OTPVerificationPage() {
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     // Move to previous input on backspace if current input is empty
-    if (e.key === "Backspace" && !otp[index] && index > 0 && inputRefs.current[index - 1]) {
-      inputRefs.current[index - 1].focus()
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      const prevInput = inputRefs.current[index - 1];
+      if (prevInput) {
+        prevInput.focus();
+      }
     }
   }
 
@@ -142,17 +146,24 @@ export default function OTPVerificationPage() {
               {otp.map((digit, index) => (
                 <input
                   key={index}
-                  type="tel"
+                  type="number"
                   inputMode="numeric"
-                  pattern="[0-9]*"
+                  pattern="\d*"
+                  autoComplete="one-time-code"
+                  min="0"
+                  max="9"
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    if (inputRefs.current) {
+                      inputRefs.current[index] = el;
+                    }
+                  }}
                   className={`w-16 h-16 text-center text-2xl bg-[#222222] rounded-lg text-white border ${
                     error ? "border-red-500" : "border-gray-700"
-                  } focus:outline-none focus:border-[#B275F7]`}
+                  } focus:outline-none focus:border-[#B275F7] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                   placeholder="X"
                 />
               ))}
