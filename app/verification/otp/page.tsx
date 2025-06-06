@@ -55,8 +55,8 @@ export default function OTPVerificationPage() {
       return
     }
 
-    // Navigate to the next page
-    window.location.href = "/verification/salesman"
+    // Navigate directly to the success page
+    window.location.href = "/verification/success"
   }
 
   return (
@@ -142,7 +142,9 @@ export default function OTPVerificationPage() {
               {otp.map((digit, index) => (
                 <input
                   key={index}
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 import { toast, Toaster } from "sonner"
 
 const PHRASE = "ITC Navy Cut: The Bold Choice"
-const MAX_RECORDING_TIME = 8;
 
 function ValidationModal({ isOpen }: { isOpen: boolean }) {
   if (!isOpen) return null;
@@ -81,13 +80,11 @@ function FeedbackModal({
 
 export default function ITCNavyCutGamePage() {
   const [isListening, setIsListening] = useState(false)
-  const [timer, setTimer] = useState(MAX_RECORDING_TIME)
   const [activeInput, setActiveInput] = useState(0)
   const [results, setResults] = useState([false, false, false])
   const [transcripts, setTranscripts] = useState(["", "", ""])
   const [modal, setModal] = useState<{type: "correct" | "incorrect" | "all-correct", attempt: number} | null>(null)
   const [isValidating, setIsValidating] = useState(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const [language, setLanguage] = useState("English")
@@ -96,10 +93,22 @@ export default function ITCNavyCutGamePage() {
   // Add permission check function
   const checkMicrophonePermission = async () => {
     try {
+      // First check if the browser supports permissions API
+      if (!navigator.permissions || !navigator.permissions.query) {
+        console.log('Permissions API not supported, falling back to getUserMedia');
+        return false;
+      }
+
       const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+      console.log('Permission status:', permissionStatus.state);
+      
+      permissionStatus.onchange = () => {
+        console.log('Permission status changed to:', permissionStatus.state);
+      };
+
       return permissionStatus.state === 'granted';
     } catch (error) {
-      console.error('Error checking microphone permission:', error);
+      console.log('Error checking permission:', error);
       return false;
     }
   };
@@ -107,9 +116,6 @@ export default function ITCNavyCutGamePage() {
   // Cleanup function
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
       }
@@ -119,7 +125,11 @@ export default function ITCNavyCutGamePage() {
   const handleSpeak = async () => {
     // If already recording, stop the recording
     if (isListening) {
-      stopRecording();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        toast.success('Recording stopped');
+      }
+      setIsListening(false);
       return;
     }
 
@@ -127,93 +137,102 @@ export default function ITCNavyCutGamePage() {
     if (activeInput > 2 || isValidating) return;
 
     try {
+      console.log('Starting handleSpeak...');
+      
       // Check if permission is already granted
       const hasPermission = await checkMicrophonePermission();
+      console.log('Initial permission check:', hasPermission);
       
-      if (!hasPermission) {
-        // On mobile, we need to request permission through getUserMedia
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        // After successful permission, proceed with recording
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-
-      // Check if the stream is valid and has audio tracks
-      if (!stream || !stream.getAudioTracks().length) {
-        throw new Error('No audio track available');
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstart = () => {
-        setIsListening(true);
-        setTimer(MAX_RECORDING_TIME);
+      let stream: MediaStream;
+      try {
+        // Always try to get the stream, even if permission check failed
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
         
-        intervalRef.current = setInterval(() => {
-          setTimer((prevTimer) => {
-            if (prevTimer <= 1) {
-              stopRecording();
-              return 0;
-            }
-            return prevTimer - 1;
-          });
-        }, 1000);
-      };
-
-      mediaRecorder.onstop = async () => {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
+        console.log('Stream obtained successfully');
+        
+        // If we get here, we have microphone access
+        if (!stream || !stream.getAudioTracks().length) {
+          throw new Error('No audio track available');
         }
-        setIsListening(false);
-        setTimer(MAX_RECORDING_TIME);
 
-        // Only validate if we have audio data
-        if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { 
-            type: 'audio/webm;codecs=opus' 
-          });
+        const audioTrack = stream.getAudioTracks()[0];
+        console.log('Audio track settings:', audioTrack.getSettings());
+        console.log('Audio track constraints:', audioTrack.getConstraints());
+        
+        // Create media recorder only after we confirm we have audio
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
 
-          // Stop all tracks
-          stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
 
-          // Start validation
-          await validateSpeech(audioBlob);
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstart = () => {
+          console.log('MediaRecorder started');
+          setIsListening(true);
+          toast.success('Recording started - Click the mic button again to stop');
+        };
+
+        mediaRecorder.onstop = async () => {
+          console.log('MediaRecorder stopped');
+          setIsListening(false);
+
+          // Only validate if we have audio data
+          if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { 
+              type: 'audio/webm;codecs=opus' 
+            });
+
+            // Stop all tracks
+            stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+
+            // Start validation
+            await validateSpeech(audioBlob);
+          }
+        };
+
+        // Request data every 100ms to ensure we capture audio
+        mediaRecorder.start(100);
+        
+      } catch (streamError: unknown) {
+        console.error('Error accessing stream:', streamError);
+        // Check if it's a permission error
+        if (streamError instanceof Error) {
+          if (streamError.name === 'NotAllowedError' || streamError.name === 'PermissionDeniedError') {
+            toast.error('Microphone access was denied. Please enable it in your browser settings and try again.');
+          } else {
+            toast.error('Error accessing microphone. Please check your device settings.');
+          }
         }
-      };
-
-      // Request data every 100ms to ensure we capture audio
-      mediaRecorder.start(100);
-      toast.success('Recording started');
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast.error('Please allow microphone access to play the game');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        throw streamError;
       }
-      toast.success('Recording stopped');
+
+    } catch (error: unknown) {
+      console.error('Final error in handleSpeak:', error);
+      // Show a more specific error message based on the error type
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          toast.error('Please allow microphone access in your browser settings to play the game');
+        } else if (error.name === 'NotFoundError') {
+          toast.error('No microphone found. Please check your device settings');
+        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+          toast.error('Could not start audio recording. Please check if another app is using your microphone');
+        } else {
+          toast.error('Error accessing microphone. Please try again');
+        }
+      }
     }
   };
 
@@ -345,26 +364,20 @@ export default function ITCNavyCutGamePage() {
 
       {/* Recording section */}
       <div className="flex flex-col items-center mb-6 z-10">
-        <span className="text-white text-sm mb-2">CLICK HERE TO START RECORDING</span>
+        <span className="text-white text-sm mb-2">
+          {isListening ? "TAP TO STOP RECORDING" : "TAP TO START RECORDING"}
+        </span>
         <button
           onClick={handleSpeak}
-          disabled={isListening || activeInput > 2}
+          disabled={activeInput > 2}
           className={`w-28 h-28 rounded-full flex items-center justify-center border-4 border-[#B275F7] shadow-lg transition-all mb-2 ${
             isListening ? "bg-red-500 animate-pulse" : "bg-[#B275F7] hover:bg-[#9d5fe0]"
           } ${activeInput > 2 ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <Mic className={`w-14 h-14 ${isListening ? "text-white" : "text-black"}`} />
         </button>
-        <div className="flex items-center gap-2 mt-2">
-          <div className="w-32 h-4 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-4 bg-[#B275F7] transition-all duration-1000"
-              style={{ width: `${(timer / MAX_RECORDING_TIME) * 100}%` }}
-            />
-          </div>
-          <span className="text-white text-xs font-mono">
-            0:{timer.toString().padStart(2, '0')}/0:08
-          </span>
+        <div className="text-white text-xs font-mono mt-2">
+          {isListening ? "Recording in progress..." : "Click to start recording"}
         </div>
       </div>
 

@@ -3,33 +3,12 @@
 import type React from "react"
 import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
-const countryCodes = [
-  { code: "+91", name: "India" },
-  { code: "+1", name: "United States" },
-  { code: "+44", name: "United Kingdom" },
-  { code: "+61", name: "Australia" },
-  { code: "+86", name: "China" },
-  { code: "+81", name: "Japan" },
-  { code: "+49", name: "Germany" },
-  { code: "+33", name: "France" },
-  { code: "+39", name: "Italy" },
-  { code: "+34", name: "Spain" },
-]
+import Image from "next/image"
 
 export default function VerificationPage() {
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [countryCode, setCountryCode] = useState("")
   const [errors, setErrors] = useState({
-    phoneNumber: "",
-    countryCode: ""
+    phoneNumber: ""
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -53,19 +32,8 @@ export default function VerificationPage() {
     setErrors(prev => ({ ...prev, phoneNumber: validatePhoneNumber(value) }))
   }
 
-  const handleCountryCodeChange = (value: string) => {
-    setCountryCode(value)
-    setErrors(prev => ({ ...prev, countryCode: value ? "" : "Please select a country code" }))
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate country code
-    if (!countryCode) {
-      setErrors(prev => ({ ...prev, countryCode: "Please select a country code" }))
-      return
-    }
 
     // Validate phone number
     const phoneError = validatePhoneNumber(phoneNumber)
@@ -74,8 +42,8 @@ export default function VerificationPage() {
       return
     }
 
-    // If all validations pass, store phone number and navigate to OTP page
-    const fullPhoneNumber = countryCode + phoneNumber
+    // Store phone number with +91 prefix and navigate to OTP page
+    const fullPhoneNumber = "+91" + phoneNumber
     sessionStorage.setItem("phoneNumber", fullPhoneNumber)
     window.location.href = "/verification/otp"
   }
@@ -160,29 +128,17 @@ export default function VerificationPage() {
               Enter Mobile Number
             </label>
             <div className="flex gap-2">
-              <Select 
-                value={countryCode} 
-                onValueChange={handleCountryCodeChange}
-              >
-                <SelectTrigger 
-                  className={`w-[180px] h-[52px] bg-[#222222] text-white border-gray-700 focus:border-[#B275F7] rounded-lg ${
-                    errors.countryCode ? "border-red-500" : ""
-                  }`}
-                >
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#222222] text-white border-gray-700">
-                  {countryCodes.map((country) => (
-                    <SelectItem 
-                      key={country.code} 
-                      value={country.code}
-                      className="focus:bg-[#B275F7] focus:text-black"
-                    >
-                      {country.code} - {country.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="w-[120px] h-[52px] bg-[#222222] text-white border border-gray-700 rounded-lg flex items-center justify-center gap-2 px-3">
+                <Image
+                  src="/india-flag.svg"
+                  alt="India flag"
+                  width={24}
+                  height={18}
+                  className="rounded"
+                  priority
+                />
+                <span>+91</span>
+              </div>
               <input
                 id="phoneNumber"
                 type="tel"
@@ -194,9 +150,9 @@ export default function VerificationPage() {
                 } focus:outline-none focus:border-[#B275F7] font-normal h-[52px]`}
               />
             </div>
-            {(errors.countryCode || errors.phoneNumber) && (
+            {errors.phoneNumber && (
               <div className="text-red-500 text-sm mt-1">
-                {errors.countryCode || errors.phoneNumber}
+                {errors.phoneNumber}
               </div>
             )}
           </div>
